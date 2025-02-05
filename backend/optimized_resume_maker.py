@@ -294,8 +294,8 @@ def main_flow(JD):
     
 
 
-JD="""
-                  Job Title – Python DeveloperLocation – Irving, TXJob Type – Full TimeExperience Required - 8+ YearsResponsibilities:Design, develop, and maintain efficient, reusable, and reliable Python code.Build robust APIs to power our applications with a focus on performance and scalability.Collaborate with frontend developers to integrate user-facing elements with server-side logic.Implement security and data protection measures.Work closely with product owners and stakeholders to gather requirements and translate them into technical solutions.Troubleshoot issues, fix bugs, and improve application performance.Stay up to date with emerging technologies and trends in the Python and FastAPI community. Requirements:Proficient in Python, with strong knowledge of its ecosystem.Experience developing APIs using FastAPI (experience with other frameworks like Flask or Django is a plus).Familiarity with asynchronous programming in Python.Solid understanding of SQL and NoSQL databases.Experience with version control systems (e.g., Git).Good understanding of front-end technologies, such as JavaScript, HTML5, and CSS3 (optional).Excellent communication and collaboration skills."
+# JD="""
+#                   Job Title – Python DeveloperLocation – Irving, TXJob Type – Full TimeExperience Required - 8+ YearsResponsibilities:Design, develop, and maintain efficient, reusable, and reliable Python code.Build robust APIs to power our applications with a focus on performance and scalability.Collaborate with frontend developers to integrate user-facing elements with server-side logic.Implement security and data protection measures.Work closely with product owners and stakeholders to gather requirements and translate them into technical solutions.Troubleshoot issues, fix bugs, and improve application performance.Stay up to date with emerging technologies and trends in the Python and FastAPI community. Requirements:Proficient in Python, with strong knowledge of its ecosystem.Experience developing APIs using FastAPI (experience with other frameworks like Flask or Django is a plus).Familiarity with asynchronous programming in Python.Solid understanding of SQL and NoSQL databases.Experience with version control systems (e.g., Git).Good understanding of front-end technologies, such as JavaScript, HTML5, and CSS3 (optional).Excellent communication and collaboration skills."
 
-"""
-main_flow(JD)
+# """
+# main_flow(JD)
