@@ -1,0 +1,47 @@
+ /* styles.css */
+.container {
+  width: 400px;
+  padding: 16px;
+}
+
+.header {
+  margin-bottom: 16px;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.content {
+  margin-top: 16px;
+}
+
+#jobDescription {
+  width: 100%;
+  height: 200px;
+  margin-bottom: 16px;
+  padding: 8px;
+}
+
+.status {
+  padding: 8px;
+  margin-top: 8px;
+  border-radius: 4px;
+}
+
+.status.success {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.status.error {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+.status.warning {
+  background-color: #fff3cd;
+  color: #856404;
+}

@@ -1,0 +1,28 @@
+<!-- // popup.html -->
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Resume Helper</title>
+  <link href="styles.css" rel="stylesheet">
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h2>Resume Helper</h2>
+      <p id="currentDate"></p>
+    </div>
+    
+    <div class="actions">
+      <button id="parseJD">Parse Job Description</button>
+      <button id="save">Save Job Details</button>
+      <button id="generate">Generate PDFs</button>
+    </div>
+
+    <div class="content">
+      <textarea id="jobDescription" placeholder="Job Description will appear here..."></textarea>
+      <div id="status" class="status"></div>
+    </div>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>
