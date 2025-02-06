@@ -20,7 +20,7 @@ from optimized_resume_maker import main_flow
 # load_dotenv()
 
 # Set up logging tcs ka batcha
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
@@ -85,7 +85,7 @@ def ispresent(link: str) -> bool:
 def save_job():
     try:
         data = request.json
-        logger.info("Received job data for saving")
+        logger.debug("Received job data for saving")
         
         #  duplicate check broOò
         if ispresent(data['jobLink']):
@@ -113,7 +113,7 @@ def save_job():
             escapechar='\\'
         )
         
-        logger.info("Job data saved successfully")
+        logger.debug("Job data saved successfully")
         return jsonify({'status': 'success'})
         
     except Exception as e:
@@ -125,7 +125,7 @@ def save_job():
 def generate():
     try:
         data = request.json
-        logger.info(f"Received generation request: {data}")
+        logger.debug(f"Received generation request: {data}")
         
         # Generate PDFs in memory
         resume_buffer, cover_buffer = main_flow(data['jobDescription'], data['companyName'])

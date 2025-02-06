@@ -87,7 +87,7 @@ def askai(prompt):
         start_time = time.time()
         response = ollama.generate(model='mistral', prompt=prompt)
         end_time = time.time()
-        print(f"Time taken for AI response: {end_time - start_time:.2f} seconds")
+        # print(f"Time taken for AI response: {end_time - start_time:.2f} seconds")
         return response['response']
     except Exception as e:
         print(f"Error in Ollama API call: {e}")
@@ -231,7 +231,7 @@ companyname :{company_name}
             options={'temperature': 0.2}  # Keep it focused
         )
         end_time = time.time()
-        print(f"Time taken for cover letter generation: {end_time - start_time:.2f} seconds")
+        # print(f"Time taken for cover letter generation: {end_time - start_time:.2f} seconds")
         return response['response']
     except Exception as e:
         print(f"Cover letter generation failed: {e}")
@@ -245,7 +245,7 @@ def generate_resume(JD, buffer):
     keywords_list_str :str =  askai(sen)
     # keywords_list:list(str) = keywords_list_str.split(",")
 
-    print(summary)
+    # print(summary)
     prompt_sum=f"""
     Here is my few keywords from Job description: {keywords_list_str}
 
@@ -258,11 +258,7 @@ Rewrite my resume summary based on the keywords, keeping the following in mind:
 * **Conciseness:**  Maintain a professional and concise tone. The summary should be no more than four lines long, focusing on the most impactful information.  Do not simply match the word count of the original summary.
 * **Style:**  Maintain the professional and results-oriented style of my original summary.
 * **Avoid:**  Do not include irrelevant information from the job description, even if it is a keyword.  For example, if the JD mentions HVAC systems but my experience is in cybersecurity, do not include HVAC in my summary.
-
-Example of a good summary:
-
-A highly motivated M.S. in Computer Science with a passion for building secure and resilient systems. Expertise in Python and C++, coupled with extensive experience in machine learning frameworks like TensorFlow and PyTorch. Proven ability to develop interpretable AI models and optimize large-scale deployments. Eager to apply these skills to challenging projects in [Target Industry/Area].
-
+No fucking place holder sir
     """
     s = askai(prompt_sum)
     # changing to keywords list instead of JD to enhance resume more better 
@@ -274,7 +270,7 @@ A highly motivated M.S. in Computer Science with a passion for building secure a
     ai_proj1 = askaiList(project_1, keywords_list_str)
     ai_proj2 = askaiList(project_2, keywords_list_str)
     end_time = time.time()
-    print(f"Time taken for AI-enhanced content generation: {end_time - start_time:.2f} seconds")
+    # print(f"Time taken for AI-enhanced content generation: {end_time - start_time:.2f} seconds")
 
     # Add sections dynamically
     add_section("Summary", [Paragraph(s, styles['Body'])])
@@ -298,8 +294,8 @@ A highly motivated M.S. in Computer Science with a passion for building secure a
 def create_cover_letter_pdf(content, buffer):
     # Custom styles
     try:
-        styles.add(ParagraphStyle(name='cv_Body', fontName='Helvetica', fontSize=11, leading=13))
-        styles.add(ParagraphStyle(name='cv_Header', fontName='Helvetica-Bold', fontSize=12, alignment=1))
+        # styles.add(ParagraphStyle(name='cv_Body', fontName='Helvetica', fontSize=11, leading=13))
+        # styles.add(ParagraphStyle(name='Header', fontName='Helvetica-Bold', fontSize=12, alignment=1))
         doc = SimpleDocTemplate(buffer, pagesize=letter,
                             leftMargin=0.75*inch, rightMargin=0.75*inch,
                             topMargin=0.5*inch, bottomMargin=0.5*inch)
@@ -313,15 +309,15 @@ def create_cover_letter_pdf(content, buffer):
         date_now = datetime.datetime.now()
         formatted_date = date_now.strftime("%d %b %Y")
         # Date and Hiring Manager Info
-        story.append(Paragraph(f"Date: {formatted_date}", styles['cv_Body']))
-        story.append(Paragraph("Hiring Manager<br/>", styles['cv_Body']))
+        story.append(Paragraph(f"Date: {formatted_date}", styles['Body']))
+        story.append(Paragraph("Hiring Manager<br/>", styles['Body']))
         story.append(Spacer(1, 0.3*inch))
     
         # Body Content
         lines = content.split('\n')
         for line in lines:
             if line.strip():  # Skip empty lines
-                story.append(Paragraph(line.strip(), styles['cv_Body']))
+                story.append(Paragraph(line.strip(), styles['Body']))
                 story.append(Spacer(1, 0.1*inch))
     
         doc.build(story)
@@ -345,8 +341,8 @@ def main_flow(JD,company):
     # cover_letter_text = generate_cover_letter(company, JD)
     # create_cover_letter_pdf(cover_letter_text, f"Cover_Letter.pdf")
     end_time = time.time()
-    print(f"Total time taken: {end_time - start_time:.2f} seconds")
-    print("Done Generating  Buffers  ")
+    # print(f"Total time taken: {end_time - start_time:.2f} seconds")
+    # print("Done Generating  Buffers  ")
 
     # returning buffer for zip files as in memory genration will take less time 
     return resume_buffer,cover_buffer
