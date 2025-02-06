@@ -65,28 +65,44 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   });
 
-  // Generate PDFs button
+ 
   document.getElementById('generate').addEventListener('click', async () => {
     try {
+      const companyName = document.getElementById('companyName').value;
+      const jd = document.getElementById('jobDescription').value;
+      
+      if (!companyName || !jd) {
+        showStatus('Company name and job description are required', 'error');
+        return;
+      }
+  
       const response = await fetch('http://localhost:5000/generate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          jobDescription: document.getElementById('jobDescription').value,
-          companyName : document.getElementById('companyName').value
-
-        }),
+          companyName: companyName,
+          jobDescription: jd
+        })
       });
-
+  
       if (response.ok) {
-        showStatus('PDFs generated successfully', 'success');
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = response.headers.get('Content-Disposition').split('filename=')[1];
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+        showStatus('Application package downloaded', 'success');
       } else {
-        throw new Error('Failed to generate PDFs');
+        throw new Error('Failed to generate package');
       }
     } catch (error) {
-      showStatus('Error generating PDFs: ' + error.message, 'error');
+      showStatus('Error generating package: ' + error.message, 'error');
     }
   });
 });

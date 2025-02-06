@@ -4,38 +4,33 @@ from datetime import datetime
 import pandas as pd
 import os
 import logging
-from reportlab.pdfgen import canvas
-from reportlab.lib.pagesizes import letter
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
-from reportlab.lib.units import inch
 from time import sleep
 from mistralai import Mistral
 import json
 import traceback
 import csv  
-
-
-from datetime import datetime, timezone  # Add timezone
+from io import BytesIO
+import zipfile
+from datetime import datetime, timezone  
 
 from optimized_resume_maker import main_flow
 
-from dotenv import load_dotenv
-load_dotenv()
+#not required as I am using ollama instead of mistral API
+# from dotenv import load_dotenv
+# load_dotenv()
 
-# Set up logging
+# Set up logging tcs ka batcha
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 CORS(app)
 
-# Constants
 STORAGE_FILE = 'job_data.csv'
 BASE_RESUME_PATH = "resume.txt"  
-OUTPUT_DIR = "generated_pdfs"  
+# OUTPUT_DIR = "generated_pdfs"  
 
-os.makedirs(OUTPUT_DIR, exist_ok=True)
+# os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 @app.route('/stats', methods=['GET'])
 def get_stats():
@@ -47,20 +42,19 @@ def get_stats():
         columns = ['date', 'job_link', 'job_description', 'company_name']
         df = pd.read_csv(STORAGE_FILE, names=columns, header=0)
         
-        # Debug: Log the first few rows of the CSV
-        logger.debug(f"CSV Data:\n{df.head()}")
+        # logger.debug(f"CSV Data:\n{df.head()}")
         
-        # Convert dates to datetime objects for accurate comparison
+        # Converting dates for accurate comparison
         df['date'] = pd.to_datetime(df['date'], errors='coerce')
         df = df.dropna(subset=['date'])  # Remove invalid dates
         
-        # Get today's date in UTC
+        # today's date UTC
         today = datetime.now(timezone.utc).date()
         jobs_today = len(df[df['date'].dt.date == today])
         
-        # Debug: Log today's date and jobs_today count
-        logger.debug(f"Today's date (UTC): {today}")
-        logger.debug(f"Jobs today: {jobs_today}")
+        # # Debug: Log today's date and jobs_today count
+        # logger.debug(f"Today's date (UTC): {today}")
+        # logger.debug(f"Jobs today: {jobs_today}")
         
         return jsonify({
             'total_jobs': len(df),
@@ -93,14 +87,14 @@ def save_job():
         data = request.json
         logger.info("Received job data for saving")
         
-        # Check for duplicate before saving
+        #  duplicate check broOò
         if ispresent(data['jobLink']):
             return jsonify({
                 'status': 'error',
                 'message': 'This job link already exists in our system'
             }), 409
             
-        # Create dataframe with consistent columns
+        # Create dataframe with consistent columns  where colums consistancy is key 
         new_entry = pd.DataFrame([{
             'date': datetime.now(timezone.utc).strftime('%Y-%m-%d'),  # Standardized date
             'job_link': data['jobLink'].strip(),
@@ -125,24 +119,45 @@ def save_job():
     except Exception as e:
         logger.error(f"Error saving job data: {str(e)}")
         return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
 @app.route('/generate', methods=['POST'])
 def generate():
     try:
         data = request.json
-       
-        logger.info(f"{data}")
-    
-        logger.info("Received job data for saving")
-        logger.info("Sent data to main-flow resume generator")
-        main_flow(data['jobDescription'],data['companyName'])
-        logger.info("Done successfully")
-        return jsonify({'status': 'success'})
+        logger.info(f"Received generation request: {data}")
+        
+        # Generate PDFs in memory
+        resume_buffer, cover_buffer = main_flow(data['jobDescription'], data['companyName'])
+        
+        # Create ZIP file in memory
+        zip_buffer = BytesIO()
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        zip_name = f"{data['companyName']}_{timestamp}.zip"
+        
+        with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+            # Add resume to ZIP
+            resume_buffer.seek(0)
+            zip_file.writestr(f"resume_{timestamp}.pdf", resume_buffer.getvalue())
+            
+            # Add cover letter to ZIP
+            cover_buffer.seek(0)
+            zip_file.writestr(f"cover_letter_{timestamp}.pdf", cover_buffer.getvalue())
+        
+        zip_buffer.seek(0)
+        
+        logger.info(f"Successfully generated ZIP package: {zip_name}")
+        return send_file(
+            zip_buffer,
+            mimetype='application/zip',
+            as_attachment=True,
+            download_name=zip_name
+        )
     
     except Exception as e:
-        logger.error(f"Error saving job data: {str(e)}")
+        logger.error(f"Generation error: {str(e)}")
         logger.error(traceback.format_exc())
         return jsonify({'status': 'error', 'message': str(e)}), 500
-
 
 
 if __name__ == '__main__':

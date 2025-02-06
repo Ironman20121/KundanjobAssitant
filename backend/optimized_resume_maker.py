@@ -6,6 +6,7 @@ from reportlab.lib.units import inch
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from io import BytesIO
 
 import datetime
 import time
@@ -303,14 +304,93 @@ def generate_resume(JD):
     end_time = time.time()
     print(f"Time taken to build resume PDF: {end_time - start_time:.2f} seconds")
 
-def main_flow(JD,company):
+
+def generate_resume(JD, buffer):
+    # Generate AI-enhanced content
     start_time = time.time()
-    generate_resume(JD)
+    prompt_sum = f"Here is my {JD} please go though my summary {summary} and modify based on JD please make sure to same length as before not make sure not more 4 lines  "
+    s = askai(prompt_sum)
+    ai_grade_exp = askaiList(graduate_experience, JD)
+    ai_tcs_exp = askaiList(cpp_experience, JD)
+    ai_full_stack = askaiList(full_stack_experience, JD)
+    ai_drdo = askaiList(drdo_experience, JD)
+    ai_unisys = askaiList(unisys_experience, JD)
+    ai_proj1 = askaiList(project_1, JD)
+    ai_proj2 = askaiList(project_2, JD)
+    end_time = time.time()
+    print(f"Time taken for AI-enhanced content generation: {end_time - start_time:.2f} seconds")
+
+    # Add sections dynamically
+    add_section("Summary", [Paragraph(s, styles['Body'])])
+    add_section("Experience", 
+        add_experience_section("Graduate Research Assistant", "University of North Georgia", "May 2024 – Dec 2024", "Dahlonega, GA, USA", ai_grade_exp) +
+        add_experience_section("C++ & Python Developer", "Tata Consultancy Services", "Nov 2021 – Nov 2023", "Hyderabad, Telangana, India", ai_tcs_exp) +
+        add_experience_section("Full Stack Developer", "River Bend Data Solutions", "Apr 2020 – Oct 2021", "Hyderabad, Telangana, India", ai_full_stack) +
+        add_experience_section("Internship: Missile Technology Case Study", "Defence Research and Development Laboratory (DRDL) - DRDO", "Apr 2019 – Jul 2019", "Hyderabad, Telangana, India", ai_drdo) +
+        add_experience_section("Machine Learning Intern", "Unisys (Remote)", "Oct 2017 – April 2018", "India", ai_unisys)
+    )
+    add_section("Projects", 
+        add_project_section("Multi-threaded TA-Student Simulation", "Systems Programming Project | C++, Docker, CMake", "https://github.com/Ironman20121/OS-threading-", ai_proj1) +
+        add_project_section("Deep Fake Video Detection", "Project (Kaggle Competition)", "https://github.com/Ironman20121/FakeVideoDetector", ai_proj2)
+    )
+    add_section("Technical Skills", add_skills_section(skills_dict))
+
+    # Build PDF in memory
+    doc = SimpleDocTemplate(buffer, pagesize=letter, leftMargin=0.6*inch, rightMargin=0.6*inch, topMargin=0.5*inch, bottomMargin=0.5*inch)
+    doc.build(story)
+
+def create_cover_letter_pdf(content, buffer):
+    # Custom styles
+    styles.add(ParagraphStyle(name='cv_Body', fontName='Helvetica', fontSize=11, leading=13))
+    styles.add(ParagraphStyle(name='cv_Header', fontName='Helvetica-Bold', fontSize=12, alignment=1))
+    doc = SimpleDocTemplate(buffer, pagesize=letter,
+                            leftMargin=0.75*inch, rightMargin=0.75*inch,
+                            topMargin=0.5*inch, bottomMargin=0.5*inch)
+    
+    story = []
+    
+    # Header
+    story.append(Paragraph("SAI KUNDAN SUDDAPALLI", styles['Center']))
+    story.append(Paragraph("Email: kundan16@hotmail.com | Phone: (706)300-2779", styles['Center']))
+    story.append(Spacer(1, 0.3*inch))
+    date_now = datetime.datetime.now()
+    formatted_date = date_now.strftime("%d %b %Y")
+    # Date and Hiring Manager Info
+    story.append(Paragraph(f"Date: {formatted_date}", styles['cv_Body']))
+    story.append(Paragraph("Hiring Manager<br/>", styles['cv_Body']))
+    story.append(Spacer(1, 0.3*inch))
+    
+    # Body Content
+    lines = content.split('\n')
+    for line in lines:
+        if line.strip():  # Skip empty lines
+            story.append(Paragraph(line.strip(), styles['cv_Body']))
+            story.append(Spacer(1, 0.1*inch))
+    
+    doc.build(story)
+
+
+
+def main_flow(JD,company):
+    # Create in-memory buffers for PDFs
+    resume_buffer = BytesIO()
+    cover_buffer = BytesIO()
+
+    start_time = time.time()
+
+    generate_resume(JD, resume_buffer)
     cover_letter_text = generate_cover_letter(company, JD)
-    create_cover_letter_pdf(cover_letter_text, f"Cover_Letter.pdf")
+    create_cover_letter_pdf(cover_letter_text, cover_buffer)
+    ############## old code ################
+    # generate_resume(JD)
+    # cover_letter_text = generate_cover_letter(company, JD)
+    # create_cover_letter_pdf(cover_letter_text, f"Cover_Letter.pdf")
     end_time = time.time()
     print(f"Total time taken: {end_time - start_time:.2f} seconds")
-    print("Done Generated ")
+    print("Done Generating  Buffers  ")
+
+    # returning buffer for zip files as in memory genration will take less time 
+    return resume_buffer,cover_buffer
 
 # # Example usage
 # if __name__ == "__main__":
