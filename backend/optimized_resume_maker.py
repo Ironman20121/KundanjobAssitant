@@ -1,5 +1,3 @@
-# optimized_resume_maker.py
-
 import ollama
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
@@ -7,7 +5,11 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table
 from reportlab.lib.units import inch
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
+from concurrent.futures import ThreadPoolExecutor, as_completed
+
 import datetime
+import time
+
 # Register fonts
 pdfmetrics.registerFont(TTFont('Helvetica', '/Users/saikundansuddapalli/Documents/Automation/jobAssistant/backend/resume_maker/helvetica-255/Helvetica.ttf'))
 pdfmetrics.registerFont(TTFont('Helvetica-Bold', '/Users/saikundansuddapalli/Documents/Automation/jobAssistant/backend/resume_maker/helvetica-255/Helvetica-Bold.ttf'))
@@ -78,39 +80,49 @@ def add_skills_section(skills_dict):
     skills.append(Spacer(1, 0.2*inch))
     return skills
 
-# # Ollama-based AI function
+# Ollama-based AI function
 def askai(prompt):
     try:
+        start_time = time.time()
         response = ollama.generate(model='mistral', prompt=prompt)
+        end_time = time.time()
+        print(f"Time taken for AI response: {end_time - start_time:.2f} seconds")
         return response['response']
     except Exception as e:
         print(f"Error in Ollama API call: {e}")
         return prompt  # Fallback to original prompt if Ollama fails
 
-# def askai(prompt):
-#     try:
-#         # Use "phi3" instead of mistral
-#         response = ollama.generate(model='gemma:2b', prompt=prompt)
-#         return response['response']
-#     except Exception as e:
-#         print(f"Error in Ollama API call: {e}")
-#         return prompt  # Fallback to original prompt
 
-# Batch processing for sentences
+
 def askaiList(sentences, JD):
     rewritten_sentences = []
-    for sentence in sentences:
+    # Function to process a single sentence
+    def process_sentence(sentence):
         prompt_exp = f"""
-You are a professional resume writer. Your task is to rewrite the following sentence from my resume to be more effective and targeted towards the provided job description. Maintain a similar length and structure for the rewritten sentence. Do not add any extra characters like # or `. Focus on using strong action verbs and quantifiable achievements whenever possible.
-
+C
 Job Description: {JD}
 
 Original Sentence: {sentence}
 
 Rewritten Sentence:
-avoid spcial characters like '*' ,'#' ,'`','"'
+avoid special characters like '*' ,'#' ,'`','"',
+avoid explain nation as the response you give directly been submitted 
+should always mentain same length as sentence i sent 
 """
-        rewritten_sentences.append(askai(prompt_exp))
+        return askai(prompt_exp)
+    # Use ThreadPoolExecutor for parallel processing
+    with ThreadPoolExecutor(max_workers=5) as executor:  # Adjust max_workers based on your system's capabilities
+        futures = [executor.submit(process_sentence, sentence) for sentence in sentences]
+
+        # Collect results as they complete
+        for future in as_completed(futures):
+            try:
+                rewritten_sentence = future.result()
+                rewritten_sentences.append(rewritten_sentence)
+            except Exception as e:
+                print(f"Error processing sentence: {e}")
+                rewritten_sentences.append(sentence)  # Fallback to original sentence if there's an error
+
     return rewritten_sentences
 
 # Example input data
@@ -176,14 +188,11 @@ skills_dict = {
     "Technologies/Frameworks": ["Git", "Docker", "GDB", "CMake", "PDB", "OpenCV", "Ghidra", "Cutter"]
 }
 
-
-
-
 # ----------- Cover Letter Generation -----------
-def generate_cover_letter(company_name,job_description):
+def generate_cover_letter(company_name, job_description):
     resume_content = ''
-    with open('/Users/saikundansuddapalli/Documents/Automation/JobApplicationHelper/resume.txt')as f:
-        resume_content=f.read()    
+    with open('/Users/saikundansuddapalli/Documents/Automation/jobAssistant/backend/resume.txt') as f:
+        resume_content = f.read()    
     prompt = f"""
 You are a professional cover letter writer. Your sole task is to generate a concise and impactful cover letter based on the provided resume content and job description.  Adhere strictly to the following guidelines:
 
@@ -212,11 +221,14 @@ companyname :{company_name}
 
 """
     try:
+        start_time = time.time()
         response = ollama.generate(
             model='mistral',
             prompt=prompt,
             options={'temperature': 0.2}  # Keep it focused
         )
+        end_time = time.time()
+        print(f"Time taken for cover letter generation: {end_time - start_time:.2f} seconds")
         return response['response']
     except Exception as e:
         print(f"Cover letter generation failed: {e}")
@@ -250,22 +262,25 @@ def create_cover_letter_pdf(content, filename="cover_letter.pdf"):
             story.append(Paragraph(line.strip(), styles['cv_Body']))
             story.append(Spacer(1, 0.1*inch))
     
+    start_time = time.time()
     doc.build(story)
+    end_time = time.time()
+    print(f"Time taken to create cover letter PDF: {end_time - start_time:.2f} seconds")
 
-
-def genreate_resume(JD):
+def generate_resume(JD):
     # Generate AI-enhanced content
+    start_time = time.time()
     prompt_sum = f"Here is my {JD} please go though my summary {summary} and modify based on JD please make sure to same length as before not make sure not more 4 lines  "
     s = askai(prompt_sum)
     ai_grade_exp = askaiList(graduate_experience, JD)
     ai_tcs_exp = askaiList(cpp_experience, JD)
-    ai_full_stack = askaiList(full_stack_experience,JD)
-    ai_drdo = askaiList(drdo_experience,JD)
-    ai_unisys = askaiList(unisys_experience,JD)
-    ai_proj1 = askaiList(project_1,JD)
-    ai_proj2 = askaiList(project_2,JD)
-    
-
+    ai_full_stack = askaiList(full_stack_experience, JD)
+    ai_drdo = askaiList(drdo_experience, JD)
+    ai_unisys = askaiList(unisys_experience, JD)
+    ai_proj1 = askaiList(project_1, JD)
+    ai_proj2 = askaiList(project_2, JD)
+    end_time = time.time()
+    print(f"Time taken for AI-enhanced content generation: {end_time - start_time:.2f} seconds")
 
     # Add sections dynamically
     add_section("Summary", [Paragraph(s, styles['Body'])])
@@ -283,19 +298,35 @@ def genreate_resume(JD):
     add_section("Technical Skills", add_skills_section(skills_dict))
 
     # Build PDF
+    start_time = time.time()
     doc.build(story)
+    end_time = time.time()
+    print(f"Time taken to build resume PDF: {end_time - start_time:.2f} seconds")
 
-def main_flow(JD):
-    
-    genreate_resume(JD)
-    cover_letter_text = generate_cover_letter("amazon",JD)
+def main_flow(JD,company):
+    start_time = time.time()
+    generate_resume(JD)
+    cover_letter_text = generate_cover_letter(company, JD)
     create_cover_letter_pdf(cover_letter_text, f"Cover_Letter.pdf")
-    print("Done Genreated ")
-    
+    end_time = time.time()
+    print(f"Total time taken: {end_time - start_time:.2f} seconds")
+    print("Done Generated ")
 
+# # Example usage
+# if __name__ == "__main__":
+#     JD = """
+#     MS with published research work in ML model optimization, post-training quantization, consideration of different datasets and different constrains (bit-accuracy, model size, latency and so on)
+# Experience with popular ML frameworks, such as PyTorch and TensorFlow
+# Experience with embedded systems and software SDK
+# Startup mindset/experience
+ 
 
-# JD="""
-#                   Job Title – Python DeveloperLocation – Irving, TXJob Type – Full TimeExperience Required - 8+ YearsResponsibilities:Design, develop, and maintain efficient, reusable, and reliable Python code.Build robust APIs to power our applications with a focus on performance and scalability.Collaborate with frontend developers to integrate user-facing elements with server-side logic.Implement security and data protection measures.Work closely with product owners and stakeholders to gather requirements and translate them into technical solutions.Troubleshoot issues, fix bugs, and improve application performance.Stay up to date with emerging technologies and trends in the Python and FastAPI community. Requirements:Proficient in Python, with strong knowledge of its ecosystem.Experience developing APIs using FastAPI (experience with other frameworks like Flask or Django is a plus).Familiarity with asynchronous programming in Python.Solid understanding of SQL and NoSQL databases.Experience with version control systems (e.g., Git).Good understanding of front-end technologies, such as JavaScript, HTML5, and CSS3 (optional).Excellent communication and collaboration skills."
+# Experience in one or more of the following areas is considered a strong plus:
 
-# """
-# main_flow(JD)
+# Experience with popular light-weight ML models on edge inference
+# Hands-on experiences with deploying/evaluating ML models on resource/power-limited computing platforms.
+# Experience providing technical leadership and/or guidance to other engineers
+# Hands-on experience on developing compiler libraries or tools
+# Hands-on experience with driver development for ASIC/FPG
+#     """
+#     main_flow(JD)

@@ -1,4 +1,4 @@
-<!-- // popup.html -->
+<!-- pop.html -->
 <!DOCTYPE html>
 <html>
 <head>
@@ -12,6 +12,11 @@
       <p id="currentDate"></p>
     </div>
     
+    <div class="stats">
+      <p>Total Jobs: <span id="totalJobs">0</span></p>
+      <p>Jobs Today: <span id="jobsToday">0</span></p>
+    </div>
+
     <div class="actions">
       <button id="parseJD">Parse Job Description</button>
       <button id="save">Save Job Details</button>
@@ -19,6 +24,7 @@
     </div>
 
     <div class="content">
+      <input type="text" id="companyName" placeholder="Enter Company Name" />
       <textarea id="jobDescription" placeholder="Job Description will appear here..."></textarea>
       <div id="status" class="status"></div>
     </div>

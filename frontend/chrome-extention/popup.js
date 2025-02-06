@@ -1,13 +1,15 @@
-// popup.js
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
   const currentDate = new Date().toLocaleDateString();
   document.getElementById('currentDate').textContent = currentDate;
+
+  // Fetch and display stats when the popup loads
+  fetchStats();
 
   // Parse JD button
   document.getElementById('parseJD').addEventListener('click', async () => {
     try {
       let [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-      
+
       const result = await chrome.scripting.executeScript({
         target: { tabId: tab.id },
         function: parseJobDescription,
@@ -25,34 +27,38 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
 
-  // Save button
   document.getElementById('save').addEventListener('click', async () => {
     const jd = document.getElementById('jobDescription').value;
-    if (!jd) {
-      showStatus('Please enter a job description', 'error');
+    const companyName = document.getElementById('companyName').value;
+  
+    if (!jd || !companyName) {
+      showStatus('Please enter a job description and company name', 'error');
       return;
     }
-
+  
     try {
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
       const data = {
-        date: currentDate,
+        date: new Date().toISOString().split('T')[0], // Use ISO format (YYYY-MM-DD)
         jobLink: tab.url,
-        jobDescription: jd
+        jobDescription: jd,
+        companyName: companyName,
       };
-
+  
       const response = await fetch('http://localhost:5000/save', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(data)
+        body: JSON.stringify(data),
       });
-
+  
       if (response.ok) {
         showStatus('Job details saved successfully', 'success');
+        fetchStats(); // Refresh stats after saving
       } else {
-        throw new Error('Failed to save job details');
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to save job details');
       }
     } catch (error) {
       showStatus('Error saving job details: ' + error.message, 'error');
@@ -68,8 +74,10 @@ document.addEventListener('DOMContentLoaded', function() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          jobDescription: document.getElementById('jobDescription').value
-        })
+          jobDescription: document.getElementById('jobDescription').value,
+          companyName : document.getElementById('companyName').value
+
+        }),
       });
 
       if (response.ok) {
@@ -82,6 +90,21 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
 });
+
+async function fetchStats() {
+  try {
+    const response = await fetch('http://localhost:5000/stats');
+    if (!response.ok) {
+      throw new Error('Failed to fetch stats');
+    }
+    const data = await response.json();
+    document.getElementById('totalJobs').textContent = data.total_jobs;
+    document.getElementById('jobsToday').textContent = data.jobs_today;
+  } catch (error) {
+    console.error('Error fetching stats:', error);
+    showStatus('Error fetching stats: ' + error.message, 'error');
+  }
+}
 
 // Function to parse JD from page
 function parseJobDescription() {
@@ -103,7 +126,7 @@ function parseJobDescription() {
 
   // If no specific selector works, try to find the largest text block
   const textBlocks = Array.from(document.getElementsByTagName('p'))
-    .map(p => ({ element: p, length: p.textContent.length }))
+    .map((p) => ({ element: p, length: p.textContent.length }))
     .sort((a, b) => b.length - a.length);
 
   if (textBlocks.length > 0) {
@@ -113,6 +136,7 @@ function parseJobDescription() {
   return null;
 }
 
+// Function to show status messages
 function showStatus(message, type) {
   const status = document.getElementById('status');
   status.textContent = message;
