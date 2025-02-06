@@ -3,3 +3,5 @@ backend/Cover_Letter.pdf
 backend/resume.pdf
 backend/.env
 backend/resume.txt
+backend/.DS_Store
+.DS_Store

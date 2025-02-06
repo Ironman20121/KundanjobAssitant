@@ -95,20 +95,22 @@ def askai(prompt):
 
 
 
-def askaiList(sentences, JD):
+def askaiList(sentences, keywordsstr):
     rewritten_sentences = []
     # Function to process a single sentence
     def process_sentence(sentence):
         prompt_exp = f"""
-C
-Job Description: {JD}
+Analyze the following sentence  and job description keywords to generate a  sentences describing relevant experience. 
+Each sentence should be concise and focus on connecting skills and experience from the resume to the job description keywords.  
+
+Job Description: {keywordsstr}
 
 Original Sentence: {sentence}
 
-Rewritten Sentence:
-avoid special characters like '*' ,'#' ,'`','"',
-avoid explain nation as the response you give directly been submitted 
-should always mentain same length as sentence i sent 
+rewrite the sentence by follow below instruction carefully :
+1 avoid special characters like '*' ,'#' ,'`','"',
+2 avoid explanation as the response you give directly been submitted 
+3 lenght of sentence may be more not more 2 lines of give sentence 
 """
         return askai(prompt_exp)
     # Use ThreadPoolExecutor for parallel processing
@@ -235,88 +237,42 @@ companyname :{company_name}
         print(f"Cover letter generation failed: {e}")
         return f"Error generating cover letter. Please refer to my resume for qualifications."
 
-def create_cover_letter_pdf(content, filename="cover_letter.pdf"):
-    # Custom styles
-    styles.add(ParagraphStyle(name='cv_Body', fontName='Helvetica', fontSize=11, leading=13))
-    styles.add(ParagraphStyle(name='cv_Header', fontName='Helvetica-Bold', fontSize=12, alignment=1))
-    doc = SimpleDocTemplate(filename, pagesize=letter,
-                            leftMargin=0.75*inch, rightMargin=0.75*inch,
-                            topMargin=0.5*inch, bottomMargin=0.5*inch)
-    
-    story = []
-    
-    # Header
-    story.append(Paragraph("SAI KUNDAN SUDDAPALLI", styles['Center']))
-    story.append(Paragraph("Email: kundan16@hotmail.com | Phone: (706)300-2779", styles['Center']))
-    story.append(Spacer(1, 0.3*inch))
-    date_now = datetime.datetime.now()
-    formatted_date = date_now.strftime("%d %b %Y")
-    # Date and Hiring Manager Info
-    story.append(Paragraph(f"Date: {formatted_date}", styles['cv_Body']))
-    story.append(Paragraph("Hiring Manager<br/>", styles['cv_Body']))
-    story.append(Spacer(1, 0.3*inch))
-    
-    # Body Content
-    lines = content.split('\n')
-    for line in lines:
-        if line.strip():  # Skip empty lines
-            story.append(Paragraph(line.strip(), styles['cv_Body']))
-            story.append(Spacer(1, 0.1*inch))
-    
-    start_time = time.time()
-    doc.build(story)
-    end_time = time.time()
-    print(f"Time taken to create cover letter PDF: {end_time - start_time:.2f} seconds")
-
-def generate_resume(JD):
-    # Generate AI-enhanced content
-    start_time = time.time()
-    prompt_sum = f"Here is my {JD} please go though my summary {summary} and modify based on JD please make sure to same length as before not make sure not more 4 lines  "
-    s = askai(prompt_sum)
-    ai_grade_exp = askaiList(graduate_experience, JD)
-    ai_tcs_exp = askaiList(cpp_experience, JD)
-    ai_full_stack = askaiList(full_stack_experience, JD)
-    ai_drdo = askaiList(drdo_experience, JD)
-    ai_unisys = askaiList(unisys_experience, JD)
-    ai_proj1 = askaiList(project_1, JD)
-    ai_proj2 = askaiList(project_2, JD)
-    end_time = time.time()
-    print(f"Time taken for AI-enhanced content generation: {end_time - start_time:.2f} seconds")
-
-    # Add sections dynamically
-    add_section("Summary", [Paragraph(s, styles['Body'])])
-    add_section("Experience", 
-        add_experience_section("Graduate Research Assistant", "University of North Georgia", "May 2024 – Dec 2024", "Dahlonega, GA, USA", ai_grade_exp) +
-        add_experience_section("C++ & Python Developer", "Tata Consultancy Services", "Nov 2021 – Nov 2023", "Hyderabad, Telangana, India", ai_tcs_exp) +
-        add_experience_section("Full Stack Developer", "River Bend Data Solutions", "Apr 2020 – Oct 2021", "Hyderabad, Telangana, India", ai_full_stack) +
-        add_experience_section("Internship: Missile Technology Case Study", "Defence Research and Development Laboratory (DRDL) - DRDO", "Apr 2019 – Jul 2019", "Hyderabad, Telangana, India", ai_drdo) +
-        add_experience_section("Machine Learning Intern", "Unisys (Remote)", "Oct 2017 – April 2018", "India", ai_unisys)
-    )
-    add_section("Projects", 
-        add_project_section("Multi-threaded TA-Student Simulation", "Systems Programming Project | C++, Docker, CMake", "https://github.com/Ironman20121/OS-threading-", ai_proj1) +
-        add_project_section("Deep Fake Video Detection", "Project (Kaggle Competition)", "https://github.com/Ironman20121/FakeVideoDetector", ai_proj2)
-    )
-    add_section("Technical Skills", add_skills_section(skills_dict))
-
-    # Build PDF
-    start_time = time.time()
-    doc.build(story)
-    end_time = time.time()
-    print(f"Time taken to build resume PDF: {end_time - start_time:.2f} seconds")
-
-
 def generate_resume(JD, buffer):
     # Generate AI-enhanced content
     start_time = time.time()
-    prompt_sum = f"Here is my {JD} please go though my summary {summary} and modify based on JD please make sure to same length as before not make sure not more 4 lines  "
+    # insted of passing JD we will pas keywords 
+    sen= f"Please extract all important techinical keywords from the job description below and format them as a comma-separated string. This string should be easily parsable into a Python list. Only provide the keywords, avoiding any additional information: {JD}"
+    keywords_list_str :str =  askai(sen)
+    # keywords_list:list(str) = keywords_list_str.split(",")
+
+    print(summary)
+    prompt_sum=f"""
+    Here is my few keywords from Job description: {keywords_list_str}
+
+Here is my current resume summary: {summary}
+
+Rewrite my resume summary based on the keywords, keeping the following in mind:
+
+* **Focus:**  My core strength is developing secure and resilient systems, with expertise in machine learning.  This should remain the central theme.
+* **Integration:**  Incorporate relevant keywords from the job description *smoothly* and *naturally*.  Do not just list them.  Prioritize keywords related to machine learning and software development.  If the JD mentions specific technologies or skills that I possess (like Python, TensorFlow, PyTorch), emphasize those.
+* **Conciseness:**  Maintain a professional and concise tone. The summary should be no more than four lines long, focusing on the most impactful information.  Do not simply match the word count of the original summary.
+* **Style:**  Maintain the professional and results-oriented style of my original summary.
+* **Avoid:**  Do not include irrelevant information from the job description, even if it is a keyword.  For example, if the JD mentions HVAC systems but my experience is in cybersecurity, do not include HVAC in my summary.
+
+Example of a good summary:
+
+A highly motivated M.S. in Computer Science with a passion for building secure and resilient systems. Expertise in Python and C++, coupled with extensive experience in machine learning frameworks like TensorFlow and PyTorch. Proven ability to develop interpretable AI models and optimize large-scale deployments. Eager to apply these skills to challenging projects in [Target Industry/Area].
+
+    """
     s = askai(prompt_sum)
-    ai_grade_exp = askaiList(graduate_experience, JD)
-    ai_tcs_exp = askaiList(cpp_experience, JD)
-    ai_full_stack = askaiList(full_stack_experience, JD)
-    ai_drdo = askaiList(drdo_experience, JD)
-    ai_unisys = askaiList(unisys_experience, JD)
-    ai_proj1 = askaiList(project_1, JD)
-    ai_proj2 = askaiList(project_2, JD)
+    # changing to keywords list instead of JD to enhance resume more better 
+    ai_grade_exp = askaiList(graduate_experience, keywords_list_str)
+    ai_tcs_exp = askaiList(cpp_experience, keywords_list_str)
+    ai_full_stack = askaiList(full_stack_experience, keywords_list_str)
+    ai_drdo = askaiList(drdo_experience, keywords_list_str)
+    ai_unisys = askaiList(unisys_experience, keywords_list_str)
+    ai_proj1 = askaiList(project_1, keywords_list_str)
+    ai_proj2 = askaiList(project_2, keywords_list_str)
     end_time = time.time()
     print(f"Time taken for AI-enhanced content generation: {end_time - start_time:.2f} seconds")
 
@@ -341,33 +297,36 @@ def generate_resume(JD, buffer):
 
 def create_cover_letter_pdf(content, buffer):
     # Custom styles
-    styles.add(ParagraphStyle(name='cv_Body', fontName='Helvetica', fontSize=11, leading=13))
-    styles.add(ParagraphStyle(name='cv_Header', fontName='Helvetica-Bold', fontSize=12, alignment=1))
-    doc = SimpleDocTemplate(buffer, pagesize=letter,
+    try:
+        styles.add(ParagraphStyle(name='cv_Body', fontName='Helvetica', fontSize=11, leading=13))
+        styles.add(ParagraphStyle(name='cv_Header', fontName='Helvetica-Bold', fontSize=12, alignment=1))
+        doc = SimpleDocTemplate(buffer, pagesize=letter,
                             leftMargin=0.75*inch, rightMargin=0.75*inch,
                             topMargin=0.5*inch, bottomMargin=0.5*inch)
     
-    story = []
+        story = []
     
-    # Header
-    story.append(Paragraph("SAI KUNDAN SUDDAPALLI", styles['Center']))
-    story.append(Paragraph("Email: kundan16@hotmail.com | Phone: (706)300-2779", styles['Center']))
-    story.append(Spacer(1, 0.3*inch))
-    date_now = datetime.datetime.now()
-    formatted_date = date_now.strftime("%d %b %Y")
-    # Date and Hiring Manager Info
-    story.append(Paragraph(f"Date: {formatted_date}", styles['cv_Body']))
-    story.append(Paragraph("Hiring Manager<br/>", styles['cv_Body']))
-    story.append(Spacer(1, 0.3*inch))
+        # Header
+        story.append(Paragraph("SAI KUNDAN SUDDAPALLI", styles['Center']))
+        story.append(Paragraph("Email: kundan16@hotmail.com | Phone: (706)300-2779", styles['Center']))
+        story.append(Spacer(1, 0.3*inch))
+        date_now = datetime.datetime.now()
+        formatted_date = date_now.strftime("%d %b %Y")
+        # Date and Hiring Manager Info
+        story.append(Paragraph(f"Date: {formatted_date}", styles['cv_Body']))
+        story.append(Paragraph("Hiring Manager<br/>", styles['cv_Body']))
+        story.append(Spacer(1, 0.3*inch))
     
-    # Body Content
-    lines = content.split('\n')
-    for line in lines:
-        if line.strip():  # Skip empty lines
-            story.append(Paragraph(line.strip(), styles['cv_Body']))
-            story.append(Spacer(1, 0.1*inch))
+        # Body Content
+        lines = content.split('\n')
+        for line in lines:
+            if line.strip():  # Skip empty lines
+                story.append(Paragraph(line.strip(), styles['cv_Body']))
+                story.append(Spacer(1, 0.1*inch))
     
-    doc.build(story)
+        doc.build(story)
+    except Exception as e:
+         print(f"Error in this create_coverletter_pdf {e}")
 
 
 
